@@ -140,6 +140,25 @@ cstr -- Null-terminated (C string)
   - `write_back` - запись результирующего значения (из памяти или АЛУ в регистр). На этом же этапе в инструкциях переходов переписывается значение pc'a
 
 ### Набор инструкций
+| Синтаксис           | Кол-во тактов | Комментарий                                   |
+|:--------------------|:--------------|:----------------------------------------------|
+| `MOV` (reg) (int)    | 4             | int -> reg                                    |
+| `GET` (reg) rx2      | 4             | data_mem[rx2] -> reg                          |
+| `STORE` (reg)        | 4             | reg -> data_mem[rx2]                          |
+| `ADD` (reg1) (reg2)  | 4             | reg1 + reg2 -> reg1                           |
+| `SUB` (reg1) (reg2)  | 4             | reg1 - reg2 -> reg1                           |
+| `MUL` (reg1) (reg2)  | 4             | reg1 * reg2 -> reg1                           |
+| `DIV` (reg1) (reg2)  | 4             | reg1 / reg2 -> rx13<br/>reg1 % reg2 -> rx14   |
+| `MOD` (reg1) (reg2)  | 4             | reg1 / reg2 -> rx13<br/>reg1 % reg2 -> rx14   |
+| EQ (reg1) (reg2)     | 4             | reg1 == reg2 -> reg1                              |
+| NE (reg1) (reg2)     | 4             | reg1 != reg2 -> reg1                              |
+| GT (reg1) (reg2)     | 4             | reg1 > reg2 -> reg1                               |
+| LT  (reg1) (reg2)    | 4             | reg1 < reg2 -> reg1                               
+| `INPUT`              | 4             | i_buf -> data_mem[rx2]??                        |
+| `OUTPUT` (reg)       | 3??           | reg -> o_buf<br/>ch(reg) -> o_buf???             |
+| `JMP`                | 2             | rx15 -> rx1                                   |
+| `JZ` (reg1) (reg2)   | 4             | zero_flag  => rx15 -> rx1 ??                  |
+| `HLT`                | 1             |                                               |
 
 | Инструкция | Номер | операнды          | Тип         | Пояснение              |
 |:-----------|-------|:------------------|:------------|------------------------|
