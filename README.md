@@ -148,8 +148,8 @@ cstr -- Null-terminated (C string)
 | `ADD` (reg1) (reg2)  | 4             | reg1 + reg2 -> reg1                           |
 | `SUB` (reg1) (reg2)  | 4             | reg1 - reg2 -> reg1                           |
 | `MUL` (reg1) (reg2)  | 4             | reg1 * reg2 -> reg1                           |
-| `DIV` (reg1) (reg2)  | 4             | reg1 / reg2 -> rx13<br/>reg1 % reg2 -> rx14   |
-| `MOD` (reg1) (reg2)  | 4             | reg1 / reg2 -> rx13<br/>reg1 % reg2 -> rx14   |
+| `DIV` (reg1) (reg2)  | 4             | reg1 / reg2 -> reg1   |
+| `MOD` (reg1) (reg2)  | 4             | reg1 % reg2 -> reg1   |
 | EQ (reg1) (reg2)     | 4             | reg1 == reg2 -> reg1                              |
 | NE (reg1) (reg2)     | 4             | reg1 != reg2 -> reg1                              |
 | GT (reg1) (reg2)     | 4             | reg1 > reg2 -> reg1                               |
