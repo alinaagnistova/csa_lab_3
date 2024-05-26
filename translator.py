@@ -8,7 +8,7 @@ data_address = 0x0
 instr_address = 0x0
 res_code = []
 var_address = []
-variables = []
+variables = set()
 reg_counter = 3  # todo, cause 0-2 supposed to be special regs, but I have only one now (rx2)
 jmp_stack = []
 last_operation = ''
@@ -46,6 +46,7 @@ def symbols():
 
 def symbol2opcode(symbol):
     return {
+        'halt': Opcode.HLT,
         'mov': Opcode.MOV,
         'store': Opcode.STORE,
         'input': Opcode.INPUT,
@@ -74,16 +75,16 @@ class Token:
 
 
 def parse(filename):
-    with open(filename, encoding="utf-8") as file:
-        code = file.read()
-    code = code.split("\n")
-    return code
+    # with open(filename, encoding="utf-8") as file:
+    #     code = file.read()
+    coded = filename
+    code = coded.split("\n")
+    return " ".join(code)
 
 
 def tokenize(parsed_code):
     tokens = []
     code = re.findall(r'\w+|[^\s\w]', parsed_code)
-    print(code)
     for word in code:
         if word in keywords():
             tokens.append(Token('KEYWORD', word))
@@ -109,7 +110,7 @@ def translate(filename):
     i = 0
     while i < len(tokens):
         token = tokens[i]
-        if token.type == 'KEYWORD' and (token.value == 'int' or token.value == 'string') and tokens[i + 2] == '=':
+        if token.type == 'KEYWORD' and (token.value == 'int' or token.value == 'string') and tokens[i + 2].value == '=':
             i = parse_alloc(tokens, i)
         elif token.type == 'KEYWORD' and token.value == 'if':
             last_operation = 'if'
@@ -159,7 +160,7 @@ def parse_alloc(tokens, i):
             add_mov_instr(reg_name, ord(char))
             add_store_instr(reg_name)
             update_reg_data()
-    return i + 5
+    return i + 4
 
 
 # def parse_assign(line):
@@ -329,13 +330,14 @@ def mov_var(addr):
     add_mov_instr('rx2', addr)
     reg_data = 'rx' + str(reg_counter)
     add_mov_instr(reg_data, 'rx2')
-    # todo change_data_reg()
-    return  # todo get_prev_data_reg()
+    update_reg_data()
+    return get_reg_data()
 
 
 def main():
     code = """int n = 6
-        print(i)"""
+            string str = "hello"
+            """
     code_d = translate(code)
     print(code_d)
 

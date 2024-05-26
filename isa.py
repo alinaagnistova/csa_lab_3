@@ -24,11 +24,11 @@ class Opcode(str,Enum):
     #ввод вывод
     INPUT = "input"
     OUTPUT = "output"
-    def __str__(self):
+    def __repr__(self):
         """Переопределение стандартного поведения `__str__` для `Enum`: вместо
         `Opcode.INC` вернуть `increment`.
         """
-        return str(self.value)
+        return f"'{self.value}'"
 
 def write_code(filename, code):
     with open(filename, "w", encoding='utf-8') as file:
