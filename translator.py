@@ -41,7 +41,7 @@ def binary_words():
 
 
 def symbols():
-    return {"(", ")", "{", "}", "=", "\""}
+    return {"(", ")", "{", "}", "="}
 
 
 def symbol2opcode(symbol):
@@ -84,7 +84,7 @@ def parse(filename):
 
 def tokenize(parsed_code):
     tokens = []
-    code = re.findall(r'\w+|[^\s\w]', parsed_code)
+    code = re.findall(r'\".*?\"|\w+|[^\s\w]+', parsed_code) #r'\w+|[^\s\w]'
     for word in code:
         if word in keywords():
             tokens.append(Token('KEYWORD', word))
@@ -96,7 +96,7 @@ def tokenize(parsed_code):
             tokens.append(Token('COMPARE', word))
         elif word in symbols():
             tokens.append(Token('SYMBOL', word))
-        elif re.match(r'^".*"$', word):
+        elif re.match(r'^".*"$', word): #r'^".*"$'
             tokens.append(Token('VAR_STRING', word))
         else:
             tokens.append(Token('NAME_STRING', word))
@@ -112,6 +112,8 @@ def translate(filename):
         token = tokens[i]
         if token.type == 'KEYWORD' and (token.value == 'int' or token.value == 'string') and tokens[i + 2].value == '=':
             i = parse_alloc(tokens, i)
+        elif token.type == 'NAME_STRING' and tokens[i + 1].value == '=':
+            i = parse_assign(tokens, i)
         elif token.type == 'KEYWORD' and token.value == 'if':
             last_operation = 'if'
             jmp_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'if'})
@@ -163,26 +165,27 @@ def parse_alloc(tokens, i):
     return i + 4
 
 
-# def parse_assign(line):
-# line = line.replace(';', '').split()
-# result = {'opcode': Opcode.STORE}
-# if len(line) == 3:
-#     if is_num_in_arg(line[2]):
-#         add_mov_instr('rx' + str(reg_counter), line[2])
-#         update_reg_data()
-#         result.update({
-#             'arg1': 'rx' + str(get_reg_data())
-#         })
-#     else:
-#         result.update({
-#             'arg1': 'rx' + str(mov_var(get_var_address(line[2])))
-#         })
-# else:
-#     result.update({
-#         'arg1': #parse_extra_action(row[2:])todo
-#     })
-# add_mov_instr('rx2', get_var_address(line[0]))
-# return result
+def parse_assign(tokens, i):
+    result = {'opcode': Opcode.STORE}
+    name = tokens[i].value
+    value = tokens[i+2]
+    if value.type == 'int':
+        add_mov_instr('rx'+ str(reg_counter), value.value)
+        update_reg_data()
+        result.update({
+            'arg1': 'rx' + str(get_reg_data())
+        })
+    elif value.type == 'NAME_STRING':
+        result.update({
+            'arg1': 'rx' + str(mov_var(get_var_address(value.value)))
+        })
+    else:
+        result.update({
+            'arg1': parse_expression(tokens[i+2:])
+        })
+    add_mov_instr('rx2', get_var_address(name))
+    res_code.append(result)
+    return i + 3 #todo what if expression complicated
 def is_num_in_arg(line):
     try:
         float(line)
@@ -207,8 +210,46 @@ def parse_print(tokens, i):
 
 
 def parse_operation(tokens, i):
+    result = {
+        'opcode': None,
+        'arg1': 0,
+        'arg2': 0,
+    }
     if tokens[i].type == 'KEYWORD' and tokens[i].value in ['if', 'while']:
-        parse_comparison(tokens, i+1)
+        parsed_tokens = tokens[i+1:]
+        left = []
+        right = []
+        idx = 0
+        j = 0
+        while j < len(parsed_tokens):
+            token = parsed_tokens[j]
+            if token.type == 'COMPARE':
+                idx = j
+                left = parsed_tokens[:j]
+                right = parsed_tokens[j+1:]
+        if len(left) > 1:
+            result.update({'arg1': parse_expression(left)})
+        else:
+            if left[0] in variables:
+                reg = 'rx' + str(mov_var(get_var_address(left[0])))
+                result.update({'arg1': reg})
+            elif is_num_in_arg(left[0]):
+                add_mov_instr("rx" + str(reg_counter), int(left[0]))
+                result.update({'arg1': "rx" + str(reg_counter)})
+                update_reg_data()
+        if len(right) > 1:
+            result.update({'arg2': parse_expression(right)})
+        else:
+            if right[0] in variables:
+                reg = 'rx' + str(mov_var(get_var_address(right[0])))
+                result.update({'arg1': reg})
+            elif is_num_in_arg(right[0]):
+                add_mov_instr("rx" + str(reg_counter), int(right[0]))
+                result.update({'arg2': "rx" + str(reg_counter)})
+                update_reg_data()
+    result.update({'opcode': symbol2opcode(parsed_tokens[idx].value)})
+
+        # parse_comparison(tokens, i+1)
     # parse_body(tokens, i)
 
 
@@ -232,6 +273,7 @@ def parse_expression(tokens):
     reg_stack = []
     op_stack = []
     def apply_operator():
+        global instr_address
         """Функция для применения оператора к двум последним операндам в стеке."""
         operator_token = op_stack.pop()
         right = reg_stack.pop() if reg_stack else 'rx0'
@@ -239,6 +281,7 @@ def parse_expression(tokens):
         operator = symbol2opcode(operator_token.value)
         res_code.append({'opcode': operator, 'arg1': left, 'arg2': right})
         update_reg_data()
+        instr_address += 1
 
     i = 0
     while i < len(tokens):
@@ -248,16 +291,15 @@ def parse_expression(tokens):
                 if is_num_in_arg(token.value):
                     reg = 'rx' + str(reg_counter)
                     add_mov_instr(reg, token.value)
+                    update_reg_data()
                     reg_stack.append(reg)
-                    # update_reg_data()
             else:
                 reg = 'rx' + str(mov_var(get_var_address(token.value)))
                 reg_stack.append(reg)
-            update_reg_data()
-        elif token.type == 'BINARY' or token.type == 'COMPARE':
+        elif token.type in ['BINARY', 'COMPARE']:
             while (op_stack and op_stack[-1].type != 'SYMBOL' and precedence(op_stack[-1].value) >= precedence(token.value)):
                 apply_operator()
-            op_stack.append(token.value)
+            op_stack.append(token)
         i+=1
     while op_stack:
         apply_operator()
@@ -272,19 +314,8 @@ def precedence(op):
     }.get(op, 0)
 
 
-def parse_body(line):
-    print("hi")
 
-
-def parse_while(line):
-    print("hi")
-
-
-def parse_if(line):
-    print("hi")
-
-
-def output(variable):  # todo how to print num and string, whats the diff?
+def output(variable):
     global instr_address
     for var in var_address:
         if var['name'] == variable:
@@ -335,8 +366,9 @@ def mov_var(addr):
 
 
 def main():
-    code = """int n = 6
-            string str = "hello"
+    code = """if (x > 2){
+    print(x)
+    }
             """
     code_d = translate(code)
     print(code_d)
