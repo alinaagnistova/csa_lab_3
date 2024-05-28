@@ -118,8 +118,11 @@ def translate(filename):
             i = parse_assign(tokens, i)
         elif token.type == 'KEYWORD' and token.value == 'if':
             jmp_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'if'})
-            add_mov_instr('rx15',0)
+            add_mov_instr('rx15',0) #todo why rx15?
             res_code.append(parse_condition(tokens[i:]))
+            while i < len(tokens) and tokens[i].value != '{':
+                i += 1
+            # i += 1
             instr_address += 1
         elif token.type == 'KEYWORD' and token.value == 'while':
             jmp_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'while'})
@@ -143,8 +146,10 @@ def translate(filename):
                 res_code.append({'opcode': symbol2opcode("jmp")})
                 instr_address += 1
                 res_code[jmp_arg["com_addr"]].update({'arg2': instr_address})
+                i += 1
             elif jmp_arg['type'] == 'if':
                 res_code[jmp_arg["com_addr"]].update({'arg2': instr_address})
+                i += 1
         else:
             i += 1
     res_code.append({'opcode': symbol2opcode("halt")})
@@ -465,7 +470,7 @@ def mov_var(addr):
 
 def main():
     code = """ int x = 0
-    while (x > 2) {
+    if (x > 2) {
     print(x)
     }
             """
