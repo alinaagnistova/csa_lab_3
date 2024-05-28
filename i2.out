@@ -1,0 +1,14 @@
+[
+    {
+        "opcode": "mov",
+        "arg1": "rx3",
+        "arg2": 3.0
+    },
+    {
+        "opcode": "store",
+        "arg1": "rx3"
+    },
+    {
+        "opcode": "halt"
+    }
+]

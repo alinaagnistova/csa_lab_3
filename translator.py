@@ -1,9 +1,6 @@
-import re
-
-from isa import write_code, Opcode
-import sys
-from typing import Dict, Set
-#todo it seems i need to rewrite parse_expression and parse_operation
+import re, sys
+#todo fix all the incorect things and check id it's works at least near to right
+from isa import write_json_code, Opcode
 data_address = 0x0
 instr_address = 0x0
 res_code = []
@@ -11,18 +8,15 @@ var_address = []
 variables = set()
 reg_counter = 3  # todo, cause 0-2 supposed to be special regs, but I have only one now (rx2)
 jmp_stack = []
-last_operation = ''
-
-def update_reg_data():  # todo
+#todo how much regs do i need
+def update_reg_data():
     global reg_counter
-    print(f"Updating register from {reg_counter}", end=' ')
     reg_counter += 1
     if reg_counter > 15:
         reg_counter = 3
-    print(f"to {reg_counter}")
 
 
-def get_reg_data():  # todo
+def get_reg_data():
     global reg_counter
     if reg_counter == 3:
         return 11
@@ -77,10 +71,9 @@ class Token:
 
 
 def parse(filename):
-    # with open(filename, encoding="utf-8") as file:
-    #     code = file.read()
-    coded = filename
-    code = coded.split("\n")
+    with open(filename, encoding="utf-8") as file:
+        code = file.read()
+    code = code.split("\n")
     return " ".join(code)
 
 
@@ -126,7 +119,6 @@ def translate(filename):
             instr_address += 1
         elif token.type == 'KEYWORD' and token.value == 'while':
             jmp_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'while'})
-            print("Stack after push:", jmp_stack)
             add_mov_instr('rx15',0)
             res_code.append(parse_condition(tokens[i:]))
             # parse_expression(tokens)
@@ -139,7 +131,6 @@ def translate(filename):
         elif token.type == 'KEYWORD' and token.value == 'print':
             i = parse_print(tokens, i)
         elif token.type == 'SYMBOL' and token.value == '}':
-            print(f"Stack before pop: {jmp_stack}")
             jmp_arg = jmp_stack.pop()
             if jmp_arg['type'] == 'while':
                 add_mov_instr("rx15", jmp_arg["com_addr"])
@@ -170,9 +161,10 @@ def parse_alloc(tokens, i):
         add_var_to_map(name, 'string')
         string_value = tokens[i + 3].value.strip("\"")
         for char in string_value:
-            add_mov_instr(reg_name, ord(char))
-            add_store_instr(reg_name)
+            add_mov_instr('rx' + str(reg_counter), ord(char))
             update_reg_data()
+            add_var_to_map(name, 'string')
+            add_store_instr('rx' + str(get_reg_data()))
     return i + 4
 
 
@@ -314,10 +306,9 @@ def parse_condition(tokens):
     global instr_address
     token_to_remove = ['(', ')', 'if', 'while']
     parsed_tokens = [token for token in tokens if token.value not in token_to_remove]
-    i = 0  # Начальный индекс поиска
+    i = 0
     while i < len(parsed_tokens) and parsed_tokens[i].value not in ['{', '}']:
         i += 1
-    # tokens до i - это токены условия
     condition_tokens = parsed_tokens[:i]
     result = {
         'opcode': None,
@@ -332,7 +323,6 @@ def parse_condition(tokens):
             if condition_tokens[idx].type == 'COMPARE':
                 left.extend(condition_tokens[:idx])
                 right.extend(condition_tokens[idx + 1:])
-                print(condition_tokens[:idx])
             idx += 1
         if idx < len(condition_tokens):
             comparison_op = condition_tokens[idx]
@@ -441,7 +431,6 @@ def add_mov_instr(reg, val):
     global instr_address
     res_code.append({'opcode': Opcode.MOV, 'arg1': reg, 'arg2': val})
     instr_address += 1
-    # todo smth else needed here?
 
 
 def get_var_address(name):
@@ -468,15 +457,19 @@ def mov_var(addr):
     return get_reg_data()
 
 
-def main():
-    code = """ int x = 0
-    if (x > 2) {
-    print(x)
-    }
-            """
-    code_d = translate(code)
-    print(code_d)
+def main(args):
+    assert len(args) == 2, "Wrong arguments"
+    source, target = args
+    opcodes = translate(source)
+    write_json_code(target, opcodes)
+    # code = """ int x = 0
+    # if (x > 2) {
+    # print(x)
+    # }
+    #         """
+    # code_d = translate(code)
+    # print(code_d)
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
