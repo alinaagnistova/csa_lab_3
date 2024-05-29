@@ -2,11 +2,176 @@
     {
         "opcode": "mov",
         "arg1": "rx3",
-        "arg2": 3.0
+        "arg2": 0.0
     },
     {
         "opcode": "store",
         "arg1": "rx3"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx4",
+        "arg2": 0.0
+    },
+    {
+        "opcode": "store",
+        "arg1": "rx4"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx0",
+        "arg2": 31
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx2",
+        "arg2": 1
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx5",
+        "arg2": "rx2"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx6",
+        "arg2": 1000
+    },
+    {
+        "opcode": "left",
+        "arg1": "rx5",
+        "arg2": "rx6"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx0",
+        "arg2": 26
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx2",
+        "arg2": 1
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx7",
+        "arg2": "rx2"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx8",
+        "arg2": 3.0
+    },
+    {
+        "opcode": "mod",
+        "arg1": "rx7",
+        "arg2": "rx8"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx9",
+        "arg2": 0
+    },
+    {
+        "opcode": "equals",
+        "arg1": "rx7",
+        "arg2": "rx9"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx0",
+        "arg2": 26
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx2",
+        "arg2": 1
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx10",
+        "arg2": "rx2"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx11",
+        "arg2": 5.0
+    },
+    {
+        "opcode": "mod",
+        "arg1": "rx10",
+        "arg2": "rx11"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx12",
+        "arg2": 0
+    },
+    {
+        "opcode": "equals",
+        "arg1": "rx10",
+        "arg2": "rx12"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx2",
+        "arg2": 0
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx13",
+        "arg2": "rx2"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx2",
+        "arg2": 0
+    },
+    {
+        "opcode": "store",
+        "arg1": "rx13"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx2",
+        "arg2": 1
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx14",
+        "arg2": "rx2"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx2",
+        "arg2": 1
+    },
+    {
+        "opcode": "store",
+        "arg1": "rx14"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx0",
+        "arg2": 4
+    },
+    {
+        "opcode": "jmp"
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx2",
+        "arg2": 1
+    },
+    {
+        "opcode": "mov",
+        "arg1": "rx15",
+        "arg2": "rx2"
+    },
+    {
+        "opcode": "output",
+        "arg1": "rx11",
+        "arg2": 0
     },
     {
         "opcode": "halt"

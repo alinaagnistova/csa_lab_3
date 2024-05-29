@@ -1,25 +1,29 @@
 import re, sys
-#todo fix all the incorect things and check id it's works at least near to right
+# todo why we dont use jz, check it tmrw!!!!!!!!!!!!!!
+# todo delete desparating types int, string
 from isa import write_json_code, Opcode
+
 data_address = 0x0
 instr_address = 0x0
 res_code = []
 var_address = []
 variables = set()
-reg_counter = 3  # todo, cause 0-2 supposed to be special regs, but I have only one now (rx2)
+reg_counter = 3
 jmp_stack = []
-#todo how much regs do i need
+jz_stack = []
+
+
 def update_reg_data():
     global reg_counter
     reg_counter += 1
-    if reg_counter > 15:
+    if reg_counter > 13:
         reg_counter = 3
 
 
 def get_reg_data():
     global reg_counter
     if reg_counter == 3:
-        return 11
+        return 13
     else:
         return reg_counter - 1
 
@@ -37,7 +41,7 @@ def binary_words():
 
 
 def symbols():
-    return {"(", ")", "{", "}", "="}
+    return {"(", ")", "{", "}", "=", ";"}
 
 
 def symbol2opcode(symbol):
@@ -71,15 +75,16 @@ class Token:
 
 
 def parse(filename):
-    with open(filename, encoding="utf-8") as file:
-        code = file.read()
+    # with open(filename, encoding="utf-8") as file:
+    #     code = file.read()
+    code = filename
     code = code.split("\n")
     return " ".join(code)
 
 
 def tokenize(parsed_code):
     tokens = []
-    code = re.findall(r'\".*?\"|\w+|[^\s\w]+', parsed_code) #r'\w+|[^\s\w]'
+    code = re.findall(r'\".*?\"|\w+|[^\s\w]+', parsed_code)
     for word in code:
         if word in keywords():
             tokens.append(Token('KEYWORD', word))
@@ -91,7 +96,7 @@ def tokenize(parsed_code):
             tokens.append(Token('COMPARE', word))
         elif word in symbols():
             tokens.append(Token('SYMBOL', word))
-        elif re.match(r'^".*"$', word): #r'^".*"$'
+        elif re.match(r'^".*"$', word):
             tokens.append(Token('VAR_STRING', word))
         else:
             tokens.append(Token('NAME_STRING', word))
@@ -108,23 +113,23 @@ def translate(filename):
         if token.type == 'KEYWORD' and (token.value == 'int' or token.value == 'string') and tokens[i + 2].value == '=':
             i = parse_alloc(tokens, i)
         elif token.type == 'NAME_STRING' and tokens[i + 1].value == '=':
-            i = parse_assign(tokens, i)
+            end = i + 2
+            while end < len(tokens) and tokens[end].value != ';':
+                end += 1
+            i = parse_assign(tokens[i:end], i)
         elif token.type == 'KEYWORD' and token.value == 'if':
             jmp_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'if'})
-            add_mov_instr('rx15',0) #todo why rx15?
+            add_mov_instr('rx15', 0)
             res_code.append(parse_condition(tokens[i:]))
             while i < len(tokens) and tokens[i].value != '{':
                 i += 1
-            # i += 1
             instr_address += 1
         elif token.type == 'KEYWORD' and token.value == 'while':
             jmp_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'while'})
-            add_mov_instr('rx15',0)
+            add_mov_instr('rx15', 0)
             res_code.append(parse_condition(tokens[i:]))
-            # parse_expression(tokens)
             while i < len(tokens) and tokens[i].value != '{':
                 i += 1
-            # i += 1
             instr_address += 1
         elif token.type == 'KEYWORD' and token.value == 'input':
             i = parse_input(tokens, i)
@@ -170,25 +175,30 @@ def parse_alloc(tokens, i):
 
 def parse_assign(tokens, i):
     result = {'opcode': Opcode.STORE}
-    name = tokens[i].value
-    value = tokens[i+2]
-    if value.type == 'int':
-        add_mov_instr('rx'+ str(reg_counter), value.value)
-        update_reg_data()
-        result.update({
-            'arg1': 'rx' + str(get_reg_data())
-        })
-    elif value.type == 'NAME_STRING':
-        result.update({
-            'arg1': 'rx' + str(mov_var(get_var_address(value.value)))
-        })
+    name = tokens[0].value
+    # value = tokens[2]
+    # print("name", name)
+    # print("value", value)
+    if len(tokens) == 3:
+        if is_num_in_arg(tokens[2].value):
+            add_mov_instr('rx' + str(reg_counter), tokens[2].value)
+            update_reg_data()
+            result.update({
+                'arg1': 'rx' + str(get_reg_data())
+            })
+        elif tokens[2].type == 'NAME_STRING':
+            result.update({
+                'arg1': 'rx' + str(mov_var(get_var_address(tokens[2].value)))
+            })
     else:
         result.update({
-            'arg1': parse_expression(tokens[i+2:])
+            'arg1': parse_complex_expr(tokens[2:])
         })
     add_mov_instr('rx2', get_var_address(name))
     res_code.append(result)
-    return i + 3 #todo what if expression complicated
+    return i + len(tokens)  # todo what if expression complicated (i + 3)
+
+
 def is_num_in_arg(line):
     try:
         float(line)
@@ -212,66 +222,52 @@ def parse_print(tokens, i):
     return i + 4
 
 
-# def parse_operation(tokens, i):
-#     result = {
-#         'opcode': None,
-#         'arg1': 0,
-#         'arg2': 0,
-#     }
-#     if tokens[i].type == 'KEYWORD' and tokens[i].value in ['if', 'while']:
-#         global parsed_tokens
-#         left = []
-#         right = []
-#         idx = 0
-#         j = 0
-#         parsed_tokens = tokens[i + 1:]
-#         while j < len(parsed_tokens):
-#             token = parsed_tokens[j]
-#             if token.type == 'COMPARE':
-#                 idx = j
-#                 left = parsed_tokens[:j]
-#                 right = parsed_tokens[j+1:]
-#         if len(left) > 1:
-#             result.update({'arg1': parse_expression(left)})
-#         else:
-#             if left[0] in variables:
-#                 reg = 'rx' + str(mov_var(get_var_address(left[0])))
-#                 result.update({'arg1': reg})
-#             elif is_num_in_arg(left[0]):
-#                 add_mov_instr("rx" + str(reg_counter), int(left[0]))
-#                 result.update({'arg1': "rx" + str(reg_counter)})
-#                 update_reg_data()
-#         if len(right) > 1:
-#             result.update({'arg2': parse_expression(right)})
-#         else:
-#             if right[0] in variables:
-#                 reg = 'rx' + str(mov_var(get_var_address(right[0])))
-#                 result.update({'arg1': reg})
-#             elif is_num_in_arg(right[0]):
-#                 add_mov_instr("rx" + str(reg_counter), int(right[0]))
-#                 result.update({'arg2': "rx" + str(reg_counter)})
-#                 update_reg_data()
-#     result.update({'opcode': symbol2opcode(parsed_tokens[idx].value)})
-#
-#         # parse_comparison(tokens, i+1)
-#     # parse_body(tokens, i)
+def parse_complex_expr(tokens):
+    global instr_address, reg_counter
+    if len(tokens) < 3:
+        return 'rx0'  # default register in case of parsing error or empty expression
+
+    # Stack for operands (registers or immediate values)
+    operand_stack = []
+    operator_stack = []
+
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        if token.type in ['NUMBER', 'NAME_STRING']:
+            if is_num_in_arg(token.value):
+                reg_name = 'rx' + str(reg_counter)
+                add_mov_instr(reg_name, token.value)
+                update_reg_data()
+                operand_stack.append(reg_name)
+            else:
+                var_reg = 'rx' + str(mov_var(get_var_address(token.value)))
+                operand_stack.append(var_reg)
+        elif token.type == 'BINARY':
+            while (operator_stack and precedence(operator_stack[-1]) >= precedence(token.value)):
+                perform_operation(operand_stack, operator_stack)
+            operator_stack.append(token.value)
+        i += 1
+
+    # Process any remaining operations
+    while operator_stack:
+        perform_operation(operand_stack, operator_stack)
+
+    return operand_stack[-1] if operand_stack else 'rx0'  # Return the last register holding the result
 
 
-# def parse_comparison(tokens, i):
-#     global instr_address,reg_counter
-#     start = i + 1
-#     end = start
-#     depth = 1
-#     while depth > 0 and end < len(tokens):
-#         if tokens[end].value == '(':
-#             depth += 1
-#         elif tokens[end].value == ')':
-#             depth -= 1
-#         end += 1
-#     end -= 1
-#     condition_tokens = tokens[start:end]
-#     parse_expression(condition_tokens)
-#     return end
+def perform_operation(operand_stack, operator_stack):
+    right = operand_stack.pop() if len(operand_stack) > 0 else 'rx0'
+    left = operand_stack.pop() if len(operand_stack) > 0 else 'rx0'
+    operator = operator_stack.pop()
+    result_reg = 'rx' + str(reg_counter)
+    opcode = symbol2opcode(operator)
+    add_mov_instr(result_reg, left)
+    res_code.append({'opcode': opcode, 'arg1': left, 'arg2': right})
+    update_reg_data()
+    operand_stack.append(result_reg)
+
+
 def parse_extra_action(tokens):
     global instr_address
     result = {'opcode': None}
@@ -288,9 +284,9 @@ def parse_extra_action(tokens):
         if is_num_in_arg(tokens[2].value):
             add_mov_instr('rx' + str(reg_counter), tokens[2].value)
             update_reg_data()
-            result.update({'arg1': 'rx' + str(reg_counter - 1)})
+            result.update({'arg2': 'rx' + str(reg_counter - 1)})
         else:
-            result.update({'arg1': 'rx' + str(mov_var(get_var_address(tokens[2].value)))})
+            result.update({'arg2': 'rx' + str(mov_var(get_var_address(tokens[2].value)))})
         res_code.append(result)
         instr_address += 1
     else:
@@ -302,6 +298,8 @@ def parse_extra_action(tokens):
         res_code.append(result)
         instr_address += 1
     return result.get('arg1')
+
+
 def parse_condition(tokens):
     global instr_address
     token_to_remove = ['(', ')', 'if', 'while']
@@ -356,45 +354,104 @@ def parse_condition(tokens):
     return result
 
 
-def parse_expression(tokens):
-    global instr_address
-    reg_stack = []
-    op_stack = []
-    # i = start
-    def apply_operator():
-        global instr_address
-        """Функция для применения оператора к двум последним операндам в стеке."""
-        operator_token = op_stack.pop()
-        right = reg_stack.pop() if reg_stack else 'rx0'
-        left = reg_stack.pop() if reg_stack else 'rx0'
-        operator = symbol2opcode(operator_token.value)
-        res_code.append({'opcode': operator, 'arg1': left, 'arg2': right})
-        update_reg_data()
-        instr_address += 1
-        return 'rx' + str(get_reg_data() - 1)
-
-    i = 0
-    while i < len(tokens) and tokens[i].value != '{':
-        token = tokens[i]
-        if token.type == 'NUMBER' or token.type == 'NAME_STRING':
-            if token.type == 'NUMBER':
-                if is_num_in_arg(token.value):
-                    reg = 'rx' + str(reg_counter)
-                    add_mov_instr(reg, token.value)
-                    update_reg_data()
-                    reg_stack.append(reg)
-            else:
-                reg = 'rx' + str(mov_var(get_var_address(token.value)))
-                reg_stack.append(reg)
-        elif token.type in ['BINARY', 'COMPARE']:
-            while (op_stack and op_stack[-1].type != 'SYMBOL' and precedence(op_stack[-1].value) >= precedence(token.value)):
-                apply_operator()
-            op_stack.append(token)
-        i+=1
-    while op_stack:
-        apply_operator()
-    return reg_stack[-1] if reg_stack else 'rx0', i  # Ensure we skip the '{' by not incrementing i here
-
+# def parse_expression(tokens):
+#     global instr_address, reg_counter
+#     result = {
+#         'opcode': None
+#     }
+#     operand_stack = []
+#     operator_stack = []
+#
+#     def apply_operation():
+#         global instr_address
+#         right = operand_stack.pop()
+#         left = operand_stack.pop()
+#         operator = operator_stack.pop()
+#         opcode = symbol2opcode(operator.value)
+#         temp_reg = 'rx' + str(reg_counter)
+#         add_mov_instr(temp_reg, left)
+#         update_reg_data()
+#         result_reg = 'rx' + str(reg_counter - 1)
+#
+#         add_mov_instr(result_reg, right)
+#         res_code.append({
+#             'opcode': opcode,
+#             'arg1': temp_reg,
+#             'arg2': result_reg
+#         })
+#         instr_address += 1
+#
+#         # Помещаем результат обратно в стек операндов
+#         operand_stack.append(result_reg)
+#
+#     i = 0
+#     while i < len(tokens):
+#         token = tokens[i]
+#         if token.type == 'NUMBER':
+#             add_mov_instr('rx' + str(reg_counter), token.value)
+#             update_reg_data()
+#             result.update({'arg1': 'rx' + str(reg_counter - 1)})
+#         elif token.type == 'NAME_STRING':
+#             result.update({'arg2': 'rx' + str(mov_var(get_var_address(token.value)))})
+#         elif token.type == 'BINARY':
+#             operator_stack.append(token.value)
+#             result.update({
+#                 'opcode': symbol2opcode(token.value)
+#             })
+#             while (operator_stack and precedence(operator_stack[-1].value) >= precedence(token.value)):
+#                 # result = {
+#                 #     'opcode': symbol2opcode(token.value),
+#                 #     'arg1': part_to_parse[0],
+#                 #     'arg2': part_to_parse[2]
+#                 # }
+#                 res_code.append(result)
+#                 instr_address += 1
+#             # operator_stack.append(token)
+#         i += 1
+#
+#     # Применяем оставшиеся операции
+#     # while operator_stack:
+#     #     apply_operation()
+#
+#     return result.get('arg1')
+#     global instr_address, reg_counter
+#     reg_stack = []
+#     op_stack = []
+#     def apply_operator():
+#         global instr_address
+#         operator_token = op_stack.pop()
+#         right = reg_stack.pop() if reg_stack else 'rx0'
+#         print("right:" , right)
+#         left = reg_stack.pop() if reg_stack else 'rx0'
+#         print("left:" , left)
+#         operator = symbol2opcode(operator_token.value)
+#         res_code.append({'opcode': operator, 'arg1': left, 'arg2': right})
+#         print("opeartor", {'opcode': operator, 'arg1': left, 'arg2': right})
+#         update_reg_data()
+#         instr_address += 1
+#         return 'rx' + str(get_reg_data() - 1)
+#
+#     i = 0
+#     while i < len(tokens):
+#         token = tokens[i]
+#         if token.type == 'NUMBER' or token.type == 'NAME_STRING':
+#             if token.type == 'NUMBER':
+#                 if is_num_in_arg(token.value):
+#                     reg = 'rx' + str(reg_counter)
+#                     add_mov_instr(reg, token.value)
+#                     update_reg_data()
+#                     reg_stack.append(reg)
+#             else:
+#                 reg = 'rx' + str(mov_var(get_var_address(token.value)))
+#                 reg_stack.append(reg)
+#         elif token.type in ['BINARY', 'COMPARE']:
+#             while (op_stack and op_stack[-1].type != 'SYMBOL' and precedence(op_stack[-1].value) >= precedence(token.value)):
+#                 apply_operator()
+#             op_stack.append(token)
+#         i+=1
+#     while op_stack:
+#         apply_operator()
+#     return reg_stack[-1] if reg_stack else 'rx0'  # Ensure we skip the '{' by not incrementing i here
 
 
 def precedence(op):
@@ -404,7 +461,6 @@ def precedence(op):
         '*': 2, '/': 2, '%': 2,
         '==': 3, '!=': 3, '>': 3, '<': 3, '>=': 3, '<=': 3
     }.get(op, 0)
-
 
 
 def output(variable):
@@ -457,19 +513,19 @@ def mov_var(addr):
     return get_reg_data()
 
 
-def main(args):
-    assert len(args) == 2, "Wrong arguments"
-    source, target = args
-    opcodes = translate(source)
-    write_json_code(target, opcodes)
-    # code = """ int x = 0
-    # if (x > 2) {
-    # print(x)
-    # }
-    #         """
-    # code_d = translate(code)
-    # print(code_d)
+# todo write_bin_code
+def main():  # args
+    code = """int n = 0;
+    n = 4;
+                """
+    code_d = translate(code)
+    print(code_d)
+    # assert len(args) == 2, "Wrong arguments"
+    # source, target = args
+    # opcodes = translate(source)
+    # write_json_code(target, opcodes)
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    # main(sys.argv[1:])
+    main()
