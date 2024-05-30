@@ -17,10 +17,10 @@ class Opcode(str,Enum):
     DIV = "div"
     MOD = "mod"
     #сравнения
-    EQ = "equals"
-    NE = "negative"
-    LT = "left"
-    GT = "right"
+    JE = "je" #jump if equals
+    JNE = "jne" # jump if not equals
+    JL = "jl" #jump if less
+    JG = "jg" #jump if greater
     #ввод вывод
     INPUT = "input"
     OUTPUT = "output"
@@ -66,3 +66,5 @@ def read_bin_code(filename):
             }
             code.append(instr)
     return code
+#4 байта опкоду 4 байта й арг 4 байта арг
+# расшифровка

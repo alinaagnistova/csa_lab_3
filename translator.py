@@ -1,5 +1,5 @@
 import re, sys
-# todo why we dont use jz, check it tmrw!!!!!!!!!!!!!!
+# todo jz and jmp!!!!!!!!!!!!!!
 # todo delete desparating types int, string
 from isa import write_json_code, Opcode
 
@@ -12,18 +12,17 @@ reg_counter = 3
 jmp_stack = []
 jz_stack = []
 
-
 def update_reg_data():
     global reg_counter
     reg_counter += 1
-    if reg_counter > 13:
+    if reg_counter > 14:
         reg_counter = 3
 
 
 def get_reg_data():
     global reg_counter
     if reg_counter == 3:
-        return 13
+        return 14
     else:
         return reg_counter - 1
 
@@ -119,6 +118,7 @@ def translate(filename):
             i = parse_assign(tokens[i:end], i)
         elif token.type == 'KEYWORD' and token.value == 'if':
             jmp_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'if'})
+            # jz_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'if'})
             add_mov_instr('rx15', 0)
             res_code.append(parse_condition(tokens[i:]))
             while i < len(tokens) and tokens[i].value != '{':
@@ -131,6 +131,7 @@ def translate(filename):
             while i < len(tokens) and tokens[i].value != '{':
                 i += 1
             instr_address += 1
+            jz_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'while'})
         elif token.type == 'KEYWORD' and token.value == 'input':
             i = parse_input(tokens, i)
         elif token.type == 'KEYWORD' and token.value == 'print':
@@ -176,9 +177,6 @@ def parse_alloc(tokens, i):
 def parse_assign(tokens, i):
     result = {'opcode': Opcode.STORE}
     name = tokens[0].value
-    # value = tokens[2]
-    # print("name", name)
-    # print("value", value)
     if len(tokens) == 3:
         if is_num_in_arg(tokens[2].value):
             add_mov_instr('rx' + str(reg_counter), tokens[2].value)
@@ -196,7 +194,7 @@ def parse_assign(tokens, i):
         })
     add_mov_instr('rx2', get_var_address(name))
     res_code.append(result)
-    return i + len(tokens)  # todo what if expression complicated (i + 3)
+    return i + len(tokens)
 
 
 def is_num_in_arg(line):
@@ -325,11 +323,6 @@ def parse_condition(tokens):
         if idx < len(condition_tokens):
             comparison_op = condition_tokens[idx]
             right = condition_tokens[idx + 1:]
-        # for i in range(0, len(tokens)):
-        #     if tokens[i].type == 'BINARY':
-        #         idx = i
-        #         left = tokens[:i]
-        #         right = tokens[i+1:]
         if len(left) > 1:
             result.update({'arg1': parse_extra_action(left)})
         else:
@@ -352,107 +345,6 @@ def parse_condition(tokens):
                 update_reg_data()
         result.update({'opcode': symbol2opcode(tokens[idx].value)})
     return result
-
-
-# def parse_expression(tokens):
-#     global instr_address, reg_counter
-#     result = {
-#         'opcode': None
-#     }
-#     operand_stack = []
-#     operator_stack = []
-#
-#     def apply_operation():
-#         global instr_address
-#         right = operand_stack.pop()
-#         left = operand_stack.pop()
-#         operator = operator_stack.pop()
-#         opcode = symbol2opcode(operator.value)
-#         temp_reg = 'rx' + str(reg_counter)
-#         add_mov_instr(temp_reg, left)
-#         update_reg_data()
-#         result_reg = 'rx' + str(reg_counter - 1)
-#
-#         add_mov_instr(result_reg, right)
-#         res_code.append({
-#             'opcode': opcode,
-#             'arg1': temp_reg,
-#             'arg2': result_reg
-#         })
-#         instr_address += 1
-#
-#         # Помещаем результат обратно в стек операндов
-#         operand_stack.append(result_reg)
-#
-#     i = 0
-#     while i < len(tokens):
-#         token = tokens[i]
-#         if token.type == 'NUMBER':
-#             add_mov_instr('rx' + str(reg_counter), token.value)
-#             update_reg_data()
-#             result.update({'arg1': 'rx' + str(reg_counter - 1)})
-#         elif token.type == 'NAME_STRING':
-#             result.update({'arg2': 'rx' + str(mov_var(get_var_address(token.value)))})
-#         elif token.type == 'BINARY':
-#             operator_stack.append(token.value)
-#             result.update({
-#                 'opcode': symbol2opcode(token.value)
-#             })
-#             while (operator_stack and precedence(operator_stack[-1].value) >= precedence(token.value)):
-#                 # result = {
-#                 #     'opcode': symbol2opcode(token.value),
-#                 #     'arg1': part_to_parse[0],
-#                 #     'arg2': part_to_parse[2]
-#                 # }
-#                 res_code.append(result)
-#                 instr_address += 1
-#             # operator_stack.append(token)
-#         i += 1
-#
-#     # Применяем оставшиеся операции
-#     # while operator_stack:
-#     #     apply_operation()
-#
-#     return result.get('arg1')
-#     global instr_address, reg_counter
-#     reg_stack = []
-#     op_stack = []
-#     def apply_operator():
-#         global instr_address
-#         operator_token = op_stack.pop()
-#         right = reg_stack.pop() if reg_stack else 'rx0'
-#         print("right:" , right)
-#         left = reg_stack.pop() if reg_stack else 'rx0'
-#         print("left:" , left)
-#         operator = symbol2opcode(operator_token.value)
-#         res_code.append({'opcode': operator, 'arg1': left, 'arg2': right})
-#         print("opeartor", {'opcode': operator, 'arg1': left, 'arg2': right})
-#         update_reg_data()
-#         instr_address += 1
-#         return 'rx' + str(get_reg_data() - 1)
-#
-#     i = 0
-#     while i < len(tokens):
-#         token = tokens[i]
-#         if token.type == 'NUMBER' or token.type == 'NAME_STRING':
-#             if token.type == 'NUMBER':
-#                 if is_num_in_arg(token.value):
-#                     reg = 'rx' + str(reg_counter)
-#                     add_mov_instr(reg, token.value)
-#                     update_reg_data()
-#                     reg_stack.append(reg)
-#             else:
-#                 reg = 'rx' + str(mov_var(get_var_address(token.value)))
-#                 reg_stack.append(reg)
-#         elif token.type in ['BINARY', 'COMPARE']:
-#             while (op_stack and op_stack[-1].type != 'SYMBOL' and precedence(op_stack[-1].value) >= precedence(token.value)):
-#                 apply_operator()
-#             op_stack.append(token)
-#         i+=1
-#     while op_stack:
-#         apply_operator()
-#     return reg_stack[-1] if reg_stack else 'rx0'  # Ensure we skip the '{' by not incrementing i here
-
 
 def precedence(op):
     """Returns the precedence of the operators."""
@@ -516,7 +408,7 @@ def mov_var(addr):
 # todo write_bin_code
 def main():  # args
     code = """int n = 0;
-    n = 4;
+    n = 4 + 3 - 2;
                 """
     code_d = translate(code)
     print(code_d)
