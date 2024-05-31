@@ -1,6 +1,7 @@
 import logging
+import sys
 
-from isa import Opcode
+from isa import Opcode, read_bin_code
 
 
 class DataPath:
@@ -112,6 +113,7 @@ class ALU:
 class ControlUnit:
     def __init__(self, program, data_path, alu):
         self.program = program
+        print(program)
         self.data_path = data_path
         self.alu = alu
         self._tick = 0
@@ -128,6 +130,7 @@ class ControlUnit:
 
     def decode_and_execute_instruction(self):
         cur_instr = self.data_path.instr_mem[self.data_path.registers.get("rx1")]
+        print(self.data_path.instr_mem)
         opcode = cur_instr['opcode']
         jmp_instr = False
         # todo match case?
@@ -247,3 +250,61 @@ def __repr__(self):
                 self.data_path.registers.get(
                     "rx15"),
                 )
+
+def simulation(code, input_token, instr_limit, iter_limit):
+    data_path = DataPath(2048, instr_limit, input_token)
+    alu = ALU(data_path)
+    control_unit = ControlUnit(code, data_path, alu)
+    instr_counter = 0
+    try:
+        control_unit.load_program()
+    except IndexError:
+        logging.error("Too many instructions. Please, increase size of instruction memory.")
+
+    try:
+        while True:
+            assert iter_limit > instr_counter, "Too many iterations. " \
+                                               "Please, increase iteration limit or correct your program."
+            control_unit.decode_and_execute_instruction()
+            instr_counter += 1
+            logging.debug(repr(control_unit))
+    except EOFError:
+        logging.info('Input buffer is empty!')
+    except StopIteration:
+        instr_counter += 1
+        pass
+    return control_unit.data_path.output_buffer, control_unit.get_curr_tick(), instr_counter
+
+
+def main(args):
+    code_file = ""
+    input_file = ""
+    assert len(args) == 2, "Wrong amount of arguments. Please, read instruction carefully."
+    if len(args) == 2:
+        code_file, input_file = args
+    input_data = []
+    if input_file:
+        # Читаем бинарные данные из файла
+        with open(input_file, "rb") as file:
+            input_data = list(file.read())
+# input_token = ""
+#     if input_file != "":
+#         with open(input_file, encoding="utf-8") as file:
+#             input_text = file.read()
+#             input_token = []
+#             for ch in input_text:
+#                 input_token.append(ch)
+
+    code = read_bin_code(code_file)
+    output, ticks, instr_amount = simulation(code, input_data, instr_limit=2048, iter_limit=100000000)
+    logging.info("output:  %s, ticks: %s", repr(output), repr(ticks))
+    print("Output buffer: {} | ticks: {} | amount_instr: {}".format(
+        ''.join(map(str, output)),
+        repr(ticks),
+        repr(instr_amount))
+    )
+
+
+if __name__ == '__main__':
+    logging.getLogger().setLevel(logging.DEBUG)
+    main(sys.argv[1:])

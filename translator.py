@@ -1,7 +1,7 @@
 import re, sys
-# todo jz and jmp!!!!!!!!!!!!!!
 # todo delete desparating types int, string
-from isa import write_json_code, Opcode
+# todo cstr
+from isa import write_json_code, Opcode, write_bin_code, read_bin_code
 
 data_address = 0x0
 instr_address = 0x0
@@ -52,13 +52,13 @@ def symbol2opcode(symbol):
         'print': Opcode.OUTPUT,
         'jmp': Opcode.JMP,
         'jz': Opcode.JZ,
-        '>': Opcode.GT,
-        '<': Opcode.LT,
-        '==': Opcode.EQ,
+        '>': Opcode.JL,
+        '<': Opcode.JG,
+        '==': Opcode.JE,
         '%': Opcode.MOD,
         '-': Opcode.SUB,
         '+': Opcode.ADD,
-        '!=': Opcode.NE,
+        '!=': Opcode.JNE,
         '/': Opcode.DIV,
         '*': Opcode.MUL,
     }.get(symbol)
@@ -74,9 +74,9 @@ class Token:
 
 
 def parse(filename):
-    # with open(filename, encoding="utf-8") as file:
-    #     code = file.read()
-    code = filename
+    with open(filename, encoding="utf-8") as file:
+        code = file.read()
+    # code = filename
     code = code.split("\n")
     return " ".join(code)
 
@@ -165,7 +165,7 @@ def parse_alloc(tokens, i):
         update_reg_data()
     elif tokens[i].value == 'string':
         add_var_to_map(name, 'string')
-        string_value = tokens[i + 3].value.strip("\"")
+        string_value = tokens[i + 3].value.strip("\"") + "\0"
         for char in string_value:
             add_mov_instr('rx' + str(reg_counter), ord(char))
             update_reg_data()
@@ -406,18 +406,20 @@ def mov_var(addr):
 
 
 # todo write_bin_code
-def main():  # args
-    code = """int n = 0;
-    n = 4 + 3 - 2;
-                """
-    code_d = translate(code)
-    print(code_d)
-    # assert len(args) == 2, "Wrong arguments"
-    # source, target = args
-    # opcodes = translate(source)
-    # write_json_code(target, opcodes)
+def main(args):  # args
+    # code = """string a = "hello";
+    #             """
+    # code_d = translate(code)
+    # print(code_d)
+    assert len(args) == 3, "Wrong arguments"
+    source, target1,target2 = args
+    opcodes = translate(source)
+    write_json_code(target1, opcodes)
+    write_bin_code(target2, opcodes)
+    print(opcodes)
+    print(read_bin_code(target2))
 
 
 if __name__ == '__main__':
-    # main(sys.argv[1:])
-    main()
+    main(sys.argv[1:])
+    # main()
