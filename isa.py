@@ -34,11 +34,37 @@ class Opcode(str,Enum):
     2. Stack operations - starts with 01
     3. Arithmetics      - starts with 0001
     4. IO               - starts with 00001
-    5. Regs              - starts with 001
+    5. Regs              - starts with 001 
+                                           
     """
-BinOpcodes = dict(halt=0b10000000, jmp=0b10000010, jz=0b10000011, mov=0b01000010, store=0b01000011,add=0b00010010,sub=0b00010011,mul=0b00010100,div=0b00010101,mod=0b00010110,je=0b10000100,jne=0b10000101,jl=0b10000110,jg=0b10000111,input=0b00001000,output=0b00001001)
+# BinOpcodes = dict(halt=0b11000000, jmp=0b11000001, jz=0b11000010, mov=0b11000011, store=0b11000100,add=0b11000101,sub=0b11000110,mul=0b11000111,div=0b11001000,mod=0b11001001,je=0b11001010,jne=0b11001011,jl=0b11001100,jg=0b11001101,input=0b11001110,output=0b11001111)
 
-BinRegs = dict(rx1=0b00100000,rx2=0b00100001,rx3=0b00100010,rx4=0b00100100,rx5=0b00101000,rx6=0b00110000,rx7=0b00110001,rx8=0b00110010,rx9=0b00110100,rx10=0b00111000,rx11=0b00111001,rx12=0b00111010,rx13=0b00111100,rx14=0b00111101,rx15=0b00111110)
+# BinRegs = dict(rx1=0b10100000,rx2=0b10100001,rx3=0b10100010,rx4=0b00100100,rx5=0b00101000,rx6=0b00110000,rx7=0b00110001,rx8=0b00110010,rx9=0b00110100,rx10=0b00111000,rx11=0b00111001,rx12=0b00111010,rx13=0b00111100,rx14=0b00111101,rx15=0b00111110)
+BinOpcodes = {
+    'halt': 0b11000000,  # Unique binary values
+    'jmp': 0b11000001,
+    'jz': 0b11000010,
+    'mov': 0b11000011,
+    'store': 0b11000100,
+    'add': 0b11000101,
+    'sub': 0b11000110,
+    'mul': 0b11000111,
+    'div': 0b11001000,
+    'mod': 0b11001001,
+    'je': 0b11001010,
+    'jne': 0b11001011,
+    'jl': 0b11001100,
+    'jg': 0b11001101,
+    'input': 0b11001110,
+    'output': 0b11001111,
+}
+
+BinRegs = {
+    'rx1': 0b10100000, 'rx2': 0b10100001, 'rx3': 0b10100010, 'rx4': 0b10100100,
+    'rx5': 0b10101000, 'rx6': 0b10110000, 'rx7': 0b10110001, 'rx8': 0b10110010,
+    'rx9': 0b10110100, 'rx10': 0b10111000, 'rx11': 0b10111001, 'rx12': 0b10111010,
+    'rx13': 0b10111100, 'rx14': 0b10111101, 'rx15': 0b10111110
+}
 def write_json_code(filename, code):
     with open(filename, "w", encoding='utf-8') as file:
         file.write(json.dumps(code, indent=4))

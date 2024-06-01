@@ -116,14 +116,15 @@ def translate(filename):
             while end < len(tokens) and tokens[end].value != ';':
                 end += 1
             i = parse_assign(tokens[i:end], i)
+            instr_address += 1
         elif token.type == 'KEYWORD' and token.value == 'if':
             jmp_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'if'})
             # jz_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'if'})
             add_mov_instr('rx15', 0)
             res_code.append(parse_condition(tokens[i:]))
+            instr_address += 1
             while i < len(tokens) and tokens[i].value != '{':
                 i += 1
-            instr_address += 1
         elif token.type == 'KEYWORD' and token.value == 'while':
             jmp_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'while'})
             add_mov_instr('rx15', 0)
@@ -165,7 +166,7 @@ def parse_alloc(tokens, i):
         update_reg_data()
     elif tokens[i].value == 'string':
         add_var_to_map(name, 'string')
-        string_value = tokens[i + 3].value.strip("\"") + "\0"
+        string_value = tokens[i + 3].value.strip("\"") + "0"
         for char in string_value:
             add_mov_instr('rx' + str(reg_counter), ord(char))
             update_reg_data()
@@ -216,7 +217,7 @@ def parse_input(tokens, i):
 
 def parse_print(tokens, i):
     print_name = tokens[i + 2].value
-    output(print_name)
+    var_out(print_name)
     return i + 4
 
 
@@ -355,7 +356,7 @@ def precedence(op):
     }.get(op, 0)
 
 
-def output(variable):
+def var_out(variable):
     global instr_address
     for var in var_address:
         if var['name'] == variable:

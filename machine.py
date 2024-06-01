@@ -41,15 +41,16 @@ class DataPath:
     def drop_flags(self):
         self.zero_flag = False
         self.neg_flag = False
-
+#todo with zero
     def output(self, reg, string_mode):
         ch = 0
         if string_mode == 1:
-            ch = chr(self.registers.get(reg))
+                ch = chr(self.registers.get(reg))
         else:
             ch = self.registers.get(reg)
         logging.info('output: %s << %s', repr(self.output_buffer), repr(ch))
-        self.output_buffer.append(ch)
+        if ch != '0':
+            self.output_buffer.append(ch)
 
     def write(self, reg):
         self.data_mem[self.registers.get('rx2')] = self.registers.get(reg)
@@ -130,84 +131,85 @@ class ControlUnit:
 
     def decode_and_execute_instruction(self):
         cur_instr = self.data_path.instr_mem[self.data_path.registers.get("rx1")]
-        print(self.data_path.instr_mem)
+        logging.debug(f"Executing {cur_instr}")
         opcode = cur_instr['opcode']
         jmp_instr = False
         # todo match case?
-        if opcode is Opcode.HLT:
+        if opcode is Opcode.HLT.value:
             raise StopIteration()
-        if opcode is Opcode.MOV:
+        if opcode is Opcode.MOV.value:
             if cur_instr['arg2'] == "rx2":
-                self.data_path.val_to_ld = self.data_path.data_mem[self.data_path.registers.get("rx2")]
+                self.data_path.val_to_mov = self.data_path.data_mem[self.data_path.registers.get("rx2")]
             else:
-                self.data_path.val_to_ld = cur_instr['arg2']
+                self.data_path.val_to_mov = cur_instr['arg2']
             self.tick()
 
             self.data_path.latch_register(cur_instr['arg1'])
             self.tick()
-        if opcode is Opcode.STORE:
+        if opcode is Opcode.STORE.value:
             self.data_path.write(cur_instr['arg1'])
             self.tick()
             self.data_path.latch_data_mem_counter(True)
             self.tick()
-        if opcode is Opcode.JMP:
-            self.data_path.val_to_ld = self.data_path.registers.get("rx15")
+        if opcode is Opcode.JMP.value:
+            self.data_path.val_to_mov = self.data_path.registers.get("rx15")
             self.data_path.latch_program_counter(False)
             self.tick()
             jmp_instr = True
-        if opcode is Opcode.JZ:
+        if opcode is Opcode.JZ.value:
             self.tick()
-        if opcode in {Opcode.ADD, Opcode.DIV, Opcode.MOD, Opcode.SUB, Opcode.MUL}:
+        if opcode in {Opcode.ADD.value, Opcode.DIV.value, Opcode.MOD.value, Opcode.SUB.value, Opcode.MUL.value}:
             res_reg = cur_instr['arg1']
-            if opcode is Opcode.ADD:
-                self.data_path.val_to_ld = self.alu.add(self.data_path.registers.get(res_reg),
+            if opcode is Opcode.ADD.value:
+                self.data_path.val_to_mov = self.alu.add(self.data_path.registers.get(res_reg),
                                                         self.data_path.registers.get(cur_instr['arg2']))
-            if opcode is Opcode.SUB:
-                self.data_path.val_to_ld = self.alu.sub(self.data_path.registers.get(res_reg),
+            if opcode is Opcode.SUB.value:
+                self.data_path.val_to_mov = self.alu.sub(self.data_path.registers.get(res_reg),
                                                         self.data_path.registers.get(cur_instr['arg2']))
-            if opcode is Opcode.MUL:
-                self.data_path.val_to_ld = self.alu.mul(self.data_path.registers.get(res_reg),
+            if opcode is Opcode.MUL.value:
+                self.data_path.val_to_mov = self.alu.mul(self.data_path.registers.get(res_reg),
                                                         self.data_path.registers.get(cur_instr['arg2']))
-            if opcode is Opcode.DIV:
-                self.data_path.val_to_ld = self.alu.div(self.data_path.registers.get(res_reg),
+            if opcode is Opcode.DIV.value:
+                self.data_path.val_to_mov = self.alu.div(self.data_path.registers.get(res_reg),
                                                         self.data_path.registers.get(cur_instr['arg2']))
-            if opcode is Opcode.MOD:
-                self.data_path.val_to_ld = self.alu.mod(self.data_path.registers.get(res_reg),
+            if opcode is Opcode.MOD.value:
+                self.data_path.val_to_mov = self.alu.mod(self.data_path.registers.get(res_reg),
                                                         self.data_path.registers.get(cur_instr['arg2']))
             self.tick()
 
             self.data_path.latch_register(res_reg)
             self.tick()
-        if opcode in {Opcode.JE, Opcode.JG, Opcode.JL, Opcode.JNE}:
+        if opcode in {Opcode.JE.value, Opcode.JG.value, Opcode.JL.value, Opcode.JNE.value}:
             arg1 = self.data_path.registers.get(cur_instr['arg1'])
             arg2 = self.data_path.registers.get(cur_instr['arg2'])
             self.alu.sub(arg1, arg2)
             self.tick()
-            self.data_path.val_to_ld = self.data_path.registers.get("rx15")
-            if opcode is Opcode.JE:
+            self.data_path.val_to_mov = self.data_path.registers.get("rx15")
+            if opcode is Opcode.JE.value:
                 if self.data_path.zero_flag:
                     self.data_path.latch_program_counter(False)
                     jmp_instr = True
-            if opcode is Opcode.JG:
+            if opcode is Opcode.JG.value:
                 if not self.data_path.zero_flag and not self.data_path.neg_flag:
                     self.data_path.latch_program_counter(False)
                     jmp_instr = True
-            if opcode is Opcode.JL:
+            if opcode is Opcode.JL.value:
                 if not self.data_path.zero_flag and self.data_path.neg_flag:
                     self.data_path.latch_program_counter(False)
                     jmp_instr = True
-            if opcode is Opcode.JNE:
+            if opcode is Opcode.JNE.value:
                 if not self.data_path.zero_flag:
                     self.data_path.latch_program_counter(False)
                     jmp_instr = True
             self.tick()
 
-        if opcode is Opcode.INPUT:
+        if opcode is Opcode.INPUT.value:
             self.data_path.input()
             self.tick()
             self.data_path.latch_data_mem_counter(True)
             self.tick()
-        if opcode is Opcode.OUTPUT:
+        if opcode is Opcode.OUTPUT.value:
+            print(f"Перед выводом - Регистр {cur_instr['arg1']} Значение: {self.data_path.registers[cur_instr['arg1']]}")
             self.data_path.output(cur_instr['arg1'], cur_instr['arg2'])
             self.tick()
         self.data_path.drop_flags()
@@ -277,26 +279,26 @@ def simulation(code, input_token, instr_limit, iter_limit):
 
 
 def main(args):
-    code_file = ""
-    input_file = ""
+    # code_file = ""
+    # input_file = ""
     assert len(args) == 2, "Wrong amount of arguments. Please, read instruction carefully."
-    if len(args) == 2:
-        code_file, input_file = args
-    input_data = []
-    if input_file:
-        # Читаем бинарные данные из файла
-        with open(input_file, "rb") as file:
-            input_data = list(file.read())
-# input_token = ""
-#     if input_file != "":
-#         with open(input_file, encoding="utf-8") as file:
-#             input_text = file.read()
-#             input_token = []
-#             for ch in input_text:
-#                 input_token.append(ch)
+    # if len(args) == 2:
+    code_file, input_file = args
+    # input_data = []
+    # if input_file:
+    #     # Читаем бинарные данные из файла
+    #     with open(input_file, "rb") as file:
+    #         input_data = list(file.read())
+    input_token = ""
+    if input_file != "":
+        with open(input_file, encoding="utf-8") as file:
+            input_text = file.read()
+            input_token = []
+            for ch in input_text:
+                input_token.append(ch)
 
     code = read_bin_code(code_file)
-    output, ticks, instr_amount = simulation(code, input_data, instr_limit=2048, iter_limit=100000000)
+    output, ticks, instr_amount = simulation(code, input_file, instr_limit=2048, iter_limit=100000000)
     logging.info("output:  %s, ticks: %s", repr(output), repr(ticks))
     print("Output buffer: {} | ticks: {} | amount_instr: {}".format(
         ''.join(map(str, output)),

@@ -1,2 +1,2 @@
-string temp = "hello, world"
-print(temp)
+string temp = " hi";
+print(temp);
