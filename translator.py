@@ -20,7 +20,7 @@ def update_reg_data():
 
 
 def get_reg_data():
-    global reg_counter
+    # global reg_counter
     if reg_counter == 3:
         return 14
     else:
@@ -119,7 +119,6 @@ def translate(filename):
             instr_address += 1
         elif token.type == 'KEYWORD' and token.value == 'if':
             jmp_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'if'})
-            # jz_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'if'})
             add_mov_instr('rx15', 0)
             res_code.append(parse_condition(tokens[i:]))
             instr_address += 1
@@ -165,7 +164,7 @@ def parse_alloc(tokens, i):
         add_store_instr(reg_name)
         update_reg_data()
     elif tokens[i].value == 'string':
-        add_var_to_map(name, 'string')
+        # add_var_to_map(name, 'string')
         string_value = tokens[i + 3].value.strip("\"") + "0"
         for char in string_value:
             add_mov_instr('rx' + str(reg_counter), ord(char))
@@ -222,14 +221,11 @@ def parse_print(tokens, i):
 
 
 def parse_complex_expr(tokens):
-    global instr_address, reg_counter
+    global instr_address
     if len(tokens) < 3:
-        return 'rx0'  # default register in case of parsing error or empty expression
-
-    # Stack for operands (registers or immediate values)
+        return 'rx0'
     operand_stack = []
     operator_stack = []
-
     i = 0
     while i < len(tokens):
         token = tokens[i]
@@ -247,12 +243,10 @@ def parse_complex_expr(tokens):
                 perform_operation(operand_stack, operator_stack)
             operator_stack.append(token.value)
         i += 1
-
-    # Process any remaining operations
     while operator_stack:
         perform_operation(operand_stack, operator_stack)
 
-    return operand_stack[-1] if operand_stack else 'rx0'  # Return the last register holding the result
+    return operand_stack[-1] if operand_stack else 'rx0'
 
 
 def perform_operation(operand_stack, operator_stack):
@@ -344,7 +338,7 @@ def parse_condition(tokens):
                 add_mov_instr("rx" + str(reg_counter), int(right[0].value))
                 result.update({'arg2': "rx" + str(reg_counter)})
                 update_reg_data()
-        result.update({'opcode': symbol2opcode(tokens[idx].value)})
+    result.update({'opcode': symbol2opcode(tokens[idx].value)})
     return result
 
 def precedence(op):
@@ -360,6 +354,7 @@ def var_out(variable):
     global instr_address
     for var in var_address:
         if var['name'] == variable:
+            print("VAR['ADDR']", var['addr'])
             reg_to_print = mov_var(var['addr'])
             if var['type'] == 'string':
                 res_code.append({'opcode': Opcode.OUTPUT, 'arg1': 'rx' + str(reg_to_print), 'arg2': 1})
@@ -379,6 +374,7 @@ def add_store_instr(reg):
 def add_mov_instr(reg, val):
     global instr_address
     res_code.append({'opcode': Opcode.MOV, 'arg1': reg, 'arg2': val})
+    print("ADD_MOV", {'opcode': Opcode.MOV, 'arg1': reg, 'arg2': val})
     instr_address += 1
 
 
@@ -388,17 +384,20 @@ def get_var_address(name):
             return var['addr']
 
 
-def add_var_to_map(name, type):
+def add_var_to_map(name, v_type):
+    global data_address
+    print("DATA ADDR", data_address)
     variables.add(name)
     var = {
         'addr': data_address,
         'name': name,
-        'type': type
+        'type': v_type
     }
     var_address.append(var)
 
 
 def mov_var(addr):
+    print("ADDR", addr)
     add_mov_instr('rx2', addr)
     reg_data = 'rx' + str(reg_counter)
     add_mov_instr(reg_data, 'rx2')

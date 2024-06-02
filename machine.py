@@ -41,16 +41,15 @@ class DataPath:
     def drop_flags(self):
         self.zero_flag = False
         self.neg_flag = False
-#todo with zero
     def output(self, reg, string_mode):
         ch = 0
         if string_mode == 1:
-                ch = chr(self.registers.get(reg))
+            ch = chr(self.registers.get(reg))
         else:
             ch = self.registers.get(reg)
-        logging.info('output: %s << %s', repr(self.output_buffer), repr(ch))
         if ch != '0':
             self.output_buffer.append(ch)
+            logging.info('output: %s << %s', repr(self.output_buffer), repr(ch))
 
     def write(self, reg):
         self.data_mem[self.registers.get('rx2')] = self.registers.get(reg)
@@ -149,8 +148,10 @@ class ControlUnit:
         if opcode is Opcode.STORE.value:
             self.data_path.write(cur_instr['arg1'])
             self.tick()
+
             self.data_path.latch_data_mem_counter(True)
             self.tick()
+
         if opcode is Opcode.JMP.value:
             self.data_path.val_to_mov = self.data_path.registers.get("rx15")
             self.data_path.latch_program_counter(False)
@@ -203,17 +204,21 @@ class ControlUnit:
                     jmp_instr = True
             self.tick()
 
-        if opcode is Opcode.INPUT.value:
-            self.data_path.input()
-            self.tick()
-            self.data_path.latch_data_mem_counter(True)
-            self.tick()
         if opcode is Opcode.OUTPUT.value:
             print(f"Перед выводом - Регистр {cur_instr['arg1']} Значение: {self.data_path.registers[cur_instr['arg1']]}")
             self.data_path.output(cur_instr['arg1'], cur_instr['arg2'])
             self.tick()
+
+        if opcode is Opcode.INPUT.value:
+            self.data_path.input()
+            self.tick()
+
+            self.data_path.latch_data_mem_counter(True)
+            self.tick()
+
         self.data_path.drop_flags()
         self.tick()
+
         if not jmp_instr:
             self.data_path.latch_program_counter(True)
             self.tick()

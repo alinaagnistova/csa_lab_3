@@ -1,2 +1,2 @@
-string temp = " hi";
+string temp = "hi";
 print(temp);
