@@ -1,11 +1,10 @@
 import re, sys
-# todo delete desparating types int, string
-# todo cstr
-from isa import write_json_code, Opcode, write_bin_code, read_bin_code
+from isa import write_json_code, Opcode, write_bin_code
 
 data_address = 0x0
 instr_address = 0x0
 res_code = []
+mnemonics = []
 var_address = []
 variables = set()
 reg_counter = 3
@@ -54,11 +53,11 @@ def symbol2opcode(symbol):
         'jz': Opcode.JZ,
         '>': Opcode.JL,
         '<': Opcode.JG,
-        '==': Opcode.JE,
+        '==': Opcode.JNE,
         '%': Opcode.MOD,
         '-': Opcode.SUB,
         '+': Opcode.ADD,
-        '!=': Opcode.JNE,
+        '!=': Opcode.JE,
         '/': Opcode.DIV,
         '*': Opcode.MUL,
     }.get(symbol)
@@ -118,20 +117,20 @@ def translate(filename):
             i = parse_assign(tokens[i:end], i)
             instr_address += 1
         elif token.type == 'KEYWORD' and token.value == 'if':
-            jmp_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'if'})
+            jmp_stack.append({'com_addr': len(res_code), 'arg': 0, 'type': 'if'})
             add_mov_instr('rx15', 0)
-            res_code.append(parse_condition(tokens[i:]))
+            condition_tokens = extract_condition(tokens, i)
+            res_code.append(parse_condition(condition_tokens))
             instr_address += 1
             while i < len(tokens) and tokens[i].value != '{':
                 i += 1
         elif token.type == 'KEYWORD' and token.value == 'while':
-            jmp_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'while'})
+            jmp_stack.append({'com_addr': len(res_code), 'arg': 0, 'type': 'while'})
             add_mov_instr('rx15', 0)
             res_code.append(parse_condition(tokens[i:]))
             while i < len(tokens) and tokens[i].value != '{':
                 i += 1
             instr_address += 1
-            jz_stack.append({'com_addr': instr_address, 'arg': 0, 'type': 'while'})
         elif token.type == 'KEYWORD' and token.value == 'input':
             i = parse_input(tokens, i)
         elif token.type == 'KEYWORD' and token.value == 'print':
@@ -142,17 +141,24 @@ def translate(filename):
                 add_mov_instr("rx15", jmp_arg["com_addr"])
                 res_code.append({'opcode': symbol2opcode("jmp")})
                 instr_address += 1
-                res_code[jmp_arg["com_addr"]].update({'arg2': instr_address})
+                res_code[jmp_arg["com_addr"]].update({'arg2': len(res_code)})
                 i += 1
             elif jmp_arg['type'] == 'if':
-                res_code[jmp_arg["com_addr"]].update({'arg2': instr_address})
+                res_code[jmp_arg["com_addr"]].update({'arg2': len(res_code)})
                 i += 1
         else:
             i += 1
     res_code.append({'opcode': symbol2opcode("halt")})
+    mnemonics.append(f"halt")
     instr_address += 1
-    return res_code
-
+    return res_code, mnemonics
+def extract_condition(tokens, start_idx):
+    condition_tokens = []
+    i = start_idx
+    while i < len(tokens) and tokens[i].value != '{':
+        condition_tokens.append(tokens[i])
+        i += 1
+    return condition_tokens
 
 def parse_alloc(tokens, i):
     global data_address
@@ -163,16 +169,18 @@ def parse_alloc(tokens, i):
         add_mov_instr(reg_name, tokens[i + 3].value)
         add_store_instr(reg_name)
         update_reg_data()
+        mnemonics.append(f"mov {reg_name} {tokens[i + 3].value}")
+        mnemonics.append(f"store {reg_name}")
     elif tokens[i].value == 'string':
-        # add_var_to_map(name, 'string')
-        string_value = tokens[i + 3].value.strip("\"") + "0"
+        string_value = tokens[i + 3].value.strip("\"") + chr(0)
         for char in string_value:
             add_mov_instr('rx' + str(reg_counter), ord(char))
             update_reg_data()
             add_var_to_map(name, 'string')
             add_store_instr('rx' + str(get_reg_data()))
+            mnemonics.append(f"mov {str(reg_counter)} {ord(char)}")
+            mnemonics.append(f"store rx{str(get_reg_data())}")
     return i + 4
-
 
 def parse_assign(tokens, i):
     result = {'opcode': Opcode.STORE}
@@ -194,6 +202,7 @@ def parse_assign(tokens, i):
         })
     add_mov_instr('rx2', get_var_address(name))
     res_code.append(result)
+    mnemonics.append(f"halt")
     return i + len(tokens)
 
 
@@ -209,6 +218,7 @@ def parse_input(tokens, i):
     global instr_address
     input_name = tokens[i + 2].value
     add_mov_instr("rx2", get_var_address(input_name))
+    mnemonics.append(f"input")
     res_code.append({'opcode': Opcode.INPUT})
     instr_address += 1
     return i + 4
@@ -255,8 +265,9 @@ def perform_operation(operand_stack, operator_stack):
     operator = operator_stack.pop()
     result_reg = 'rx' + str(reg_counter)
     opcode = symbol2opcode(operator)
-    add_mov_instr(result_reg, left)
+    mnemonics.append(f"{opcode} {left} {right}")
     res_code.append({'opcode': opcode, 'arg1': left, 'arg2': right})
+    add_mov_instr(result_reg, left)
     update_reg_data()
     operand_stack.append(result_reg)
 
@@ -280,6 +291,7 @@ def parse_extra_action(tokens):
             result.update({'arg2': 'rx' + str(reg_counter - 1)})
         else:
             result.update({'arg2': 'rx' + str(mov_var(get_var_address(tokens[2].value)))})
+        mnemonics.append(f"{result['opcode']} {result['arg1']} {result['arg2']}")
         res_code.append(result)
         instr_address += 1
     else:
@@ -288,6 +300,7 @@ def parse_extra_action(tokens):
             'arg1': tokens[0].value,
             'arg2': tokens[2].value
         }
+        mnemonics.append(f"{symbol2opcode(tokens[1].value)} {tokens[0].value} {tokens[2].value}")
         res_code.append(result)
         instr_address += 1
     return result.get('arg1')
@@ -338,11 +351,15 @@ def parse_condition(tokens):
                 add_mov_instr("rx" + str(reg_counter), int(right[0].value))
                 result.update({'arg2': "rx" + str(reg_counter)})
                 update_reg_data()
+            elif right[0].value == "\"0\"":
+                result.update({'arg2': 'rx0'})
+            elif right[0].value == 'EOF':
+                result.update({'arg2': 'rx0'})
     result.update({'opcode': symbol2opcode(tokens[idx].value)})
+    mnemonics.append(f"{result['opcode']} {result['arg1']} {result['arg2']}")
     return result
 
 def precedence(op):
-    """Returns the precedence of the operators."""
     return {
         '+': 1, '-': 1,
         '*': 2, '/': 2, '%': 2,
@@ -354,12 +371,13 @@ def var_out(variable):
     global instr_address
     for var in var_address:
         if var['name'] == variable:
-            print("VAR['ADDR']", var['addr'])
             reg_to_print = mov_var(var['addr'])
             if var['type'] == 'string':
                 res_code.append({'opcode': Opcode.OUTPUT, 'arg1': 'rx' + str(reg_to_print), 'arg2': 1})
+                mnemonics.append(f"output {'rx' + str(reg_to_print)} {1}")
             else:
                 res_code.append({'opcode': Opcode.OUTPUT, 'arg1': 'rx' + str(reg_to_print), 'arg2': 0})
+                mnemonics.append(f"output {'rx' + str(reg_to_print)} {0}")
             update_reg_data()
             instr_address += 1
 
@@ -367,6 +385,7 @@ def var_out(variable):
 def add_store_instr(reg):
     global instr_address, data_address
     res_code.append({'opcode': Opcode.STORE, 'arg1': reg})
+    mnemonics.append(f"store {reg}")
     instr_address += 1
     data_address += 1
 
@@ -374,7 +393,7 @@ def add_store_instr(reg):
 def add_mov_instr(reg, val):
     global instr_address
     res_code.append({'opcode': Opcode.MOV, 'arg1': reg, 'arg2': val})
-    print("ADD_MOV", {'opcode': Opcode.MOV, 'arg1': reg, 'arg2': val})
+    mnemonics.append(f"mov {reg} {val}")
     instr_address += 1
 
 
@@ -386,7 +405,6 @@ def get_var_address(name):
 
 def add_var_to_map(name, v_type):
     global data_address
-    print("DATA ADDR", data_address)
     variables.add(name)
     var = {
         'addr': data_address,
@@ -397,7 +415,6 @@ def add_var_to_map(name, v_type):
 
 
 def mov_var(addr):
-    print("ADDR", addr)
     add_mov_instr('rx2', addr)
     reg_data = 'rx' + str(reg_counter)
     add_mov_instr(reg_data, 'rx2')
@@ -405,21 +422,18 @@ def mov_var(addr):
     return get_reg_data()
 
 
-# todo write_bin_code
-def main(args):  # args
-    # code = """string a = "hello";
-    #             """
-    # code_d = translate(code)
-    # print(code_d)
+def main(args):
     assert len(args) == 3, "Wrong arguments"
-    source, target1,target2 = args
-    opcodes = translate(source)
-    write_json_code(target1, opcodes)
+    source, target_mnem, target2 = args
+    opcodes, mnemonics = translate(source)
+    if target_mnem is not None:
+        with open(target_mnem, "w") as f:
+            for line in mnemonics:
+                f.write(line + "\n")
     write_bin_code(target2, opcodes)
-    print(opcodes)
-    print(read_bin_code(target2))
+
+
 
 
 if __name__ == '__main__':
     main(sys.argv[1:])
-    # main()

@@ -1,0 +1,92 @@
+mov rx3 72
+store rx3
+mov 4 72
+store rx3
+mov rx4 101
+store rx4
+mov 5 101
+store rx4
+mov rx5 108
+store rx5
+mov 6 108
+store rx5
+mov rx6 108
+store rx6
+mov 7 108
+store rx6
+mov rx7 111
+store rx7
+mov 8 111
+store rx7
+mov rx8 44
+store rx8
+mov 9 44
+store rx8
+mov rx9 32
+store rx9
+mov 10 32
+store rx9
+mov rx10 119
+store rx10
+mov 11 119
+store rx10
+mov rx11 111
+store rx11
+mov 12 111
+store rx11
+mov rx12 114
+store rx12
+mov 13 114
+store rx12
+mov rx13 108
+store rx13
+mov 14 108
+store rx13
+mov rx14 100
+store rx14
+mov 3 100
+store rx14
+mov rx3 0
+store rx3
+mov 4 0
+store rx3
+mov rx2 0
+mov rx4 rx2
+output rx4 1
+mov rx2 1
+mov rx6 rx2
+output rx6 1
+mov rx2 2
+mov rx8 rx2
+output rx8 1
+mov rx2 3
+mov rx10 rx2
+output rx10 1
+mov rx2 4
+mov rx12 rx2
+output rx12 1
+mov rx2 5
+mov rx14 rx2
+output rx14 1
+mov rx2 6
+mov rx4 rx2
+output rx4 1
+mov rx2 7
+mov rx6 rx2
+output rx6 1
+mov rx2 8
+mov rx8 rx2
+output rx8 1
+mov rx2 9
+mov rx10 rx2
+output rx10 1
+mov rx2 10
+mov rx12 rx2
+output rx12 1
+mov rx2 11
+mov rx14 rx2
+output rx14 1
+mov rx2 12
+mov rx4 rx2
+output rx4 1
+halt

@@ -1,8 +1,8 @@
 import logging
+import os
 from collections import namedtuple
 from enum import Enum
 import json
-#todo bin_code
 class Opcode(str,Enum):
     #поток программы
     HLT = "halt"
@@ -27,44 +27,45 @@ class Opcode(str,Enum):
     OUTPUT = "output"
     def __repr__(self):
         return f"'{self.value}'"
-    """
-    As program memory is 16-bit, only last byte is represented, first is 0x00
-    Opcodes can be divided into groups:
-    1. Program flow     - starts with 1
-    2. Stack operations - starts with 01
-    3. Arithmetics      - starts with 0001
-    4. IO               - starts with 00001
-    5. Regs              - starts with 001 
-                                           
-    """
-# BinOpcodes = dict(halt=0b11000000, jmp=0b11000001, jz=0b11000010, mov=0b11000011, store=0b11000100,add=0b11000101,sub=0b11000110,mul=0b11000111,div=0b11001000,mod=0b11001001,je=0b11001010,jne=0b11001011,jl=0b11001100,jg=0b11001101,input=0b11001110,output=0b11001111)
 
-# BinRegs = dict(rx1=0b10100000,rx2=0b10100001,rx3=0b10100010,rx4=0b00100100,rx5=0b00101000,rx6=0b00110000,rx7=0b00110001,rx8=0b00110010,rx9=0b00110100,rx10=0b00111000,rx11=0b00111001,rx12=0b00111010,rx13=0b00111100,rx14=0b00111101,rx15=0b00111110)
 BinOpcodes = {
-    'halt': 0b11000000,  # Unique binary values
-    'jmp': 0b11000001,
-    'jz': 0b11000010,
-    'mov': 0b11000011,
-    'store': 0b11000100,
-    'add': 0b11000101,
-    'sub': 0b11000110,
-    'mul': 0b11000111,
-    'div': 0b11001000,
-    'mod': 0b11001001,
-    'je': 0b11001010,
-    'jne': 0b11001011,
-    'jl': 0b11001100,
-    'jg': 0b11001101,
-    'input': 0b11001110,
-    'output': 0b11001111,
+    'halt': 0b1100000000000000,
+    'jmp': 0b1100000100000000,
+    'jz': 0b1100001000000000,
+    'mov': 0b1100001100000000,
+    'store': 0b1100010000000000,
+    'add': 0b1100010100000000,
+    'sub': 0b1100011000000000,
+    'mul': 0b1100011100000000,
+    'div': 0b1100100000000000,
+    'mod': 0b1100100100000000,
+    'je': 0b1100101000000000,
+    'jne': 0b1100101100000000,
+    'jl': 0b1100110000000000,
+    'jg': 0b1100110100000000,
+    'input': 0b1100111000000000,
+    'output': 0b1100111100000000,
+}
+#24 bit
+BinRegs = {
+    'rx0': 0b10100000 << 16,
+    'rx1': 0b10100001 << 16,
+    'rx2': 0b10100010 << 16,
+    'rx3': 0b10100100 << 16,
+    'rx4': 0b10101000 << 16,
+    'rx5': 0b10110000 << 16,
+    'rx6': 0b10110001 << 16,
+    'rx7': 0b10110010 << 16,
+    'rx8': 0b10110100 << 16,
+    'rx9': 0b10111000 << 16,
+    'rx10': 0b10111001 << 16,
+    'rx11': 0b10111010 << 16,
+    'rx12': 0b10111100 << 16,
+    'rx13': 0b10111101 << 16,
+    'rx14': 0b10111110 << 16,
+    'rx15': 0b10111111 << 16
 }
 
-BinRegs = {
-    'rx1': 0b10100000, 'rx2': 0b10100001, 'rx3': 0b10100010, 'rx4': 0b10100100,
-    'rx5': 0b10101000, 'rx6': 0b10110000, 'rx7': 0b10110001, 'rx8': 0b10110010,
-    'rx9': 0b10110100, 'rx10': 0b10111000, 'rx11': 0b10111001, 'rx12': 0b10111010,
-    'rx13': 0b10111100, 'rx14': 0b10111101, 'rx15': 0b10111110
-}
 def write_json_code(filename, code):
     with open(filename, "w", encoding='utf-8') as file:
         file.write(json.dumps(code, indent=4))
@@ -89,74 +90,38 @@ def write_bin_code(filename, code):
                     arg2_bin = int(instr['arg2'])
             else:
                 arg2_bin = 0
-            binary_instruction = (opcode_bin << 24) | (arg1_bin << 12) | arg2_bin & 0xFFF
-            print(binary_instruction.to_bytes(4, byteorder='big', signed=False))
-            file.write(binary_instruction.to_bytes(4, byteorder='big', signed=False))
-            # arg1 = instr.get('arg1', 0)
-            # arg2 = instr.get('arg2', 0)
-            # Кодируем инструкцию в 32-битное целое число
-            # binary_instruction = (Opcode[opcode].value << 24) | (arg1 << 12) | arg2
-            # Пишем инструкцию в файл
-            # file.write(binary_instruction.to_bytes(4, byteorder='big', signed=False))
+            binary_instruction = (opcode_bin << 48) | (arg1_bin << 24) | arg2_bin
+            binary_instruction.to_bytes(8, byteorder='big', signed=False)
+            file.write(binary_instruction.to_bytes(8, byteorder='big', signed=False))
+
+
 def read_bin_code(filename):
     code = []
     with open(filename, "rb") as file:
         while True:
-            bytes_read = file.read(4)
+            bytes_read = file.read(8)
             if not bytes_read:
                 break
-            # Конвертируем 4 байта в 32-битное целое число
             binary_instruction = int.from_bytes(bytes_read, byteorder='big', signed=False)
-
-            # Извлекаем опкод
-            opcode_num = (binary_instruction >> 24) & 0xFF
-            # Найдем строковое представление опкода
+            opcode_num = (binary_instruction >> 48) & 0xFFFF
             try:
                 opcode = next(key for key, value in BinOpcodes.items() if value == opcode_num)
             except StopIteration:
-                # Если опкод не найден, выводим ошибку и номер неправильного опкода
-                logging.error(f"Unknown opcode: {opcode_num:#04x} at position {file.tell() - 4}")
+                logging.error(f"Unknown opcode: {opcode_num:#04x} at position {file.tell() - 8}")
                 continue
-                # todo
-                # opcode = next(key for key, value in BinOpcodes.items() if value == opcode_num)
 
-            # Извлекаем аргументы
-            arg1_bin = (binary_instruction >> 12) & 0xFFF
-            arg2_bin = binary_instruction & 0xFFF
+            arg1_bin = (binary_instruction >> 24) & 0xFFFFFF
+            arg2_bin = binary_instruction & 0xFFFFFF
 
-            # Преобразуем числовые представления аргументов обратно в идентификаторы регистров или оставляем как есть
             arg1 = next(key for key, value in BinRegs.items() if
                         value == arg1_bin) if arg1_bin in BinRegs.values() else arg1_bin
             arg2 = next(key for key, value in BinRegs.items() if
                         value == arg2_bin) if arg2_bin in BinRegs.values() else arg2_bin
 
-            # Создаем словарь для инструкции
             instr = {
                 'opcode': opcode,
                 'arg1': arg1,
                 'arg2': arg2
             }
             code.append(instr)
-
     return code
-    # code = []
-    # with open(filename, "rb") as file:
-    #     while True:
-    #         bytes_read = file.read(4)
-    #         if not bytes_read:
-    #             break
-    #         # Конвертируем байты обратно в инструкцию
-    #         binary_instruction = int.from_bytes(bytes_read, byteorder='big', signed=False)
-    #         opcode_num = (binary_instruction >> 24) & 0xFF
-    #         arg1 = (binary_instruction >> 12) & 0xFFF
-    #         arg2 = binary_instruction & 0xFFF
-    #         opcode = Opcode._value2member_map_[opcode_num]  # Используем маппинг номера на член Enum
-    #         instr = {
-    #             'opcode': opcode,
-    #             'arg1': arg1,
-    #             'arg2': arg2
-    #         }
-    #         code.append(instr)
-    # return code
-#4 байта опкоду 4 байта й арг 4 байта арг
-# расшифровка

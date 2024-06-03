@@ -1,0 +1,6 @@
+string tmp = "";
+input(tmp);
+while (tmp != "0") {
+print(tmp);
+input(tmp);
+}

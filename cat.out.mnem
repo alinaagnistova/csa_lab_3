@@ -1,0 +1,17 @@
+mov rx3 0
+store rx3
+mov 4 0
+store rx3
+mov rx2 0
+input
+mov rx15 0
+mov rx2 0
+mov rx4 rx2
+je rx4 rx0
+mov rx2 0
+mov rx5 rx2
+output rx5 1
+mov rx2 0
+input
+mov rx15 4
+halt
