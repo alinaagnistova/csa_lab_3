@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from isa import Opcode, read_bin_code, read_json_code
+from isa import Opcode, read_bin_code
 
 class DataPath:
     def __init__(self, data_mem_size, instr_mem_size, input_buffer):
@@ -11,7 +11,7 @@ class DataPath:
         self.neg_flag = False
         self.output_buffer = []
         self.input_buffer = input_buffer
-        self.val_to_mov = 0  # можно передавать через функцию
+        self.val_to_mov = 0
         self.registers = {
             'rx0': 0x0,  # Регистр, постоянно хранящий 0
             'rx1': 0x0,  # Регистр текущей инструкции

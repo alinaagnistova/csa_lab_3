@@ -1,5 +1,5 @@
 import re, sys
-from isa import write_json_code, Opcode, write_bin_code
+from isa import Opcode, write_bin_code
 
 data_address = 0x0
 instr_address = 0x0
@@ -19,7 +19,6 @@ def update_reg_data():
 
 
 def get_reg_data():
-    # global reg_counter
     if reg_counter == 3:
         return 14
     else:
