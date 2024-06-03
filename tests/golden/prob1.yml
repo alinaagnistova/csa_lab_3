@@ -1,0 +1,88 @@
+source: |-
+  int sum = 0;
+  int i = 0;
+  int a = 9;
+  while (i < 1000) {
+      if (i % 3 == 0) {
+          sum = sum + i;
+      }
+  
+        if (i % 3 != 0) {
+          if (i % 5 == 0) {
+            sum = sum + i;
+            }
+             }
+             i = i + 1;
+      }
+  print(sum);
+out_mnemonics: |
+  mov rx3 0.0
+  store rx3
+  mov rx3 0.0
+  store rx3
+  mov rx4 0.0
+  store rx4
+  mov rx4 0.0
+  store rx4
+  mov rx5 9.0
+  store rx5
+  mov rx5 9.0
+  store rx5
+  mov rx15 0
+  mov rx2 1
+  mov rx6 rx2
+  mov rx7 1000
+  jg rx6 rx7
+  mov rx15 0
+  mov rx2 1
+  mov rx8 rx2
+  mov rx9 3.0
+  mod rx8 rx9
+  mov rx10 0
+  jne rx8 rx10
+  mov rx2 0
+  mov rx11 rx2
+  mov rx2 1
+  mov rx12 rx2
+  add rx11 rx12
+  mov rx13 rx11
+  mov rx2 0
+  halt
+  mov rx15 0
+  mov rx2 1
+  mov rx14 rx2
+  mov rx3 3.0
+  mod rx14 rx3
+  mov rx4 0
+  je rx14 rx4
+  mov rx15 0
+  mov rx2 1
+  mov rx5 rx2
+  mov rx6 5.0
+  mod rx5 rx6
+  mov rx7 0
+  jne rx5 rx7
+  mov rx2 0
+  mov rx8 rx2
+  mov rx2 1
+  mov rx9 rx2
+  add rx8 rx9
+  mov rx10 rx8
+  mov rx2 0
+  halt
+  mov rx2 1
+  mov rx11 rx2
+  mov rx12 1.0
+  add rx11 rx12
+  mov rx13 rx11
+  mov rx2 1
+  halt
+  mov rx15 6
+  mov rx2 0
+  mov rx14 rx2
+  output rx14 0
+  halt
+code: | 
+  c300a40000000000c400a40000000000c300a80000000000c400a80000000000c300b00000000009c400b00000000000c300bf0000000039c300a20000000001c300b10000a20000c300b200000003e8cd00b10000b20000c300bf000000001ac300a20000000001c300b40000a20000c300b80000000003c900b40000b80000c300b90000000000cb00b40000b90000c300a20000000000c300ba0000a20000c300a20000000001c300bc0000a20000c500ba0000bc0000c300bd0000ba0000c300a20000000000c400bd0000000000c300bf0000000030c300a20000000001c300be0000a20000c300a40000000003c900be0000a40000c300a80000000000ca00be0000a80000c300bf0000000030c300a20000000001c300b00000a20000c300b10000000005c900b00000b10000c300b20000000000cb00b00000b20000c300a20000000000c300b40000a20000c300a20000000001c300b80000a20000c500b40000b80000c300b90000b40000c300a20000000000c400b90000000000c300a20000000001c300ba0000a20000c300bc0000000001c500ba0000bc0000c300bd0000ba0000c300a20000000001c400bd0000000000c300bf0000000006c100000000000000c300a20000000000c300be0000a20000cf00be0000000000c000000000000000
+output: |
+  Output buffer: 234168 | ticks: 142282 | amount_instr: 36456

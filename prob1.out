@@ -1,0 +1,66 @@
+mov rx3 0.0
+store rx3
+mov rx3 0.0
+store rx3
+mov rx4 0.0
+store rx4
+mov rx4 0.0
+store rx4
+mov rx5 9.0
+store rx5
+mov rx5 9.0
+store rx5
+mov rx15 0
+mov rx2 1
+mov rx6 rx2
+mov rx7 1000
+jg rx6 rx7
+mov rx15 0
+mov rx2 1
+mov rx8 rx2
+mov rx9 3.0
+mod rx8 rx9
+mov rx10 0
+jne rx8 rx10
+mov rx2 0
+mov rx11 rx2
+mov rx2 1
+mov rx12 rx2
+add rx11 rx12
+mov rx13 rx11
+mov rx2 0
+halt
+mov rx15 0
+mov rx2 1
+mov rx14 rx2
+mov rx3 3.0
+mod rx14 rx3
+mov rx4 0
+je rx14 rx4
+mov rx15 0
+mov rx2 1
+mov rx5 rx2
+mov rx6 5.0
+mod rx5 rx6
+mov rx7 0
+jne rx5 rx7
+mov rx2 0
+mov rx8 rx2
+mov rx2 1
+mov rx9 rx2
+add rx8 rx9
+mov rx10 rx8
+mov rx2 0
+halt
+mov rx2 1
+mov rx11 rx2
+mov rx12 1.0
+add rx11 rx12
+mov rx13 rx11
+mov rx2 1
+halt
+mov rx15 6
+mov rx2 0
+mov rx14 rx2
+output rx14 0
+halt

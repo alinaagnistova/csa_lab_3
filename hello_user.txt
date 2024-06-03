@@ -1,0 +1,9 @@
+string hi = "Hi ";
+string tmp = "";
+input(tmp);
+print(hi);
+while (tmp != "0") {
+input(tmp);
+print(tmp);
+}
+
