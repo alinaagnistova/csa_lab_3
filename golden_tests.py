@@ -23,10 +23,10 @@ def test_hello_program(golden, caplog):
         input = os.path.join(tmp_dir_name, "input.txt")
 
         with open(source, "w", encoding="utf-8") as file:
-            file.write(golden['source'])
+            file.write(golden["source"])
 
         with open(input, "w", encoding="utf-8") as file:
-            file.write(golden.get('input', ''))
+            file.write(golden.get("input", ""))
 
         with contextlib.redirect_stdout(io.StringIO()) as stdout:
             translator.main([source, mnem, target])
@@ -55,16 +55,16 @@ def test_cat_program(golden, caplog):
         input = os.path.join(tmp_dir_name, "input.txt")
 
         with open(source, "w", encoding="utf-8") as file:
-            file.write(golden['source'])
+            file.write(golden["source"])
         with open(input, "w", encoding="utf-8") as file:
-            file.write(golden.get('input', ''))
+            file.write(golden.get("input", ""))
 
         with contextlib.redirect_stdout(io.StringIO()) as stdout:
             translator.main([source, mnem, target])
             machine.main([target, input])
 
         with open(target, "rb") as file:
-            code = file.read().hex() + '\n'
+            code = file.read().hex() + "\n"
 
         with open(mnem, "r", encoding="utf-8") as file:
             mnemonics = file.read()
@@ -86,9 +86,9 @@ def test_cat_program(golden, caplog):
         input = os.path.join(tmp_dir_name, "input.txt")
 
         with open(source, "w", encoding="utf-8") as file:
-            file.write(golden['source'])
+            file.write(golden["source"])
         with open(input, "w", encoding="utf-8") as file:
-            file.write(golden.get('input', ''))
+            file.write(golden.get("input", ""))
 
         with contextlib.redirect_stdout(io.StringIO()) as stdout:
             translator.main([source, mnem, target])
@@ -105,6 +105,7 @@ def test_cat_program(golden, caplog):
         assert stdout.getvalue() == golden.out["output"]
         assert caplog.text == golden["log"]
 
+
 @pytest.mark.golden_test("tests/golden/prob1.yml")
 def test_prob1_program(golden):
     with tempfile.TemporaryDirectory() as tmp_dir_name:
@@ -114,17 +115,17 @@ def test_prob1_program(golden):
         input = os.path.join(tmp_dir_name, "input.txt")
 
         with open(source, "w", encoding="utf-8") as file:
-            file.write(golden['source'])
+            file.write(golden["source"])
 
         with open(input, "w", encoding="utf-8") as file:
-            file.write(golden.get('input', ''))
+            file.write(golden.get("input", ""))
 
         with contextlib.redirect_stdout(io.StringIO()) as stdout:
             translator.main([source, mnem, target])
             machine.main([target, input])
 
         with open(target, "rb") as file:
-            code = file.read().hex() + '\n'
+            code = file.read().hex() + "\n"
 
         with open(mnem, encoding="utf-8") as file:
             mnemonics = file.read()
