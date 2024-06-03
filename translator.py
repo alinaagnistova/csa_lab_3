@@ -1,4 +1,5 @@
-import re, sys
+import re
+import sys
 from isa import Opcode, write_bin_code
 
 data_address = 0x0
@@ -153,7 +154,7 @@ def translate(filename):
         else:
             i += 1
     res_code.append({"opcode": symbol2opcode("halt")})
-    mnemonics.append(f"halt")
+    mnemonics.append("halt")
     instr_address += 1
     return res_code, mnemonics
 
@@ -206,7 +207,7 @@ def parse_assign(tokens, i):
         result.update({"arg1": parse_complex_expr(tokens[2:])})
     add_mov_instr("rx2", get_var_address(name))
     res_code.append(result)
-    mnemonics.append(f"halt")
+    mnemonics.append("halt")
     return i + len(tokens)
 
 
@@ -222,7 +223,7 @@ def parse_input(tokens, i):
     global instr_address
     input_name = tokens[i + 2].value
     add_mov_instr("rx2", get_var_address(input_name))
-    mnemonics.append(f"input")
+    mnemonics.append("input")
     res_code.append({"opcode": Opcode.INPUT})
     instr_address += 1
     return i + 4
@@ -339,7 +340,6 @@ def parse_condition(tokens):
                 right.extend(condition_tokens[idx + 1 :])
             idx += 1
         if idx < len(condition_tokens):
-            comparison_op = condition_tokens[idx]
             right = condition_tokens[idx + 1 :]
         if len(left) > 1:
             result.update({"arg1": parse_extra_action(left)})

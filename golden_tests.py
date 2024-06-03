@@ -76,7 +76,7 @@ def test_cat_program(golden, caplog):
 
 
 @pytest.mark.golden_test("tests/golden/hello_user.yml")
-def test_cat_program(golden, caplog):
+def test_hello_user_program(golden, caplog):
     caplog.set_level(logging.DEBUG)
 
     with tempfile.TemporaryDirectory() as tmp_dir_name:
